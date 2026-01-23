@@ -62,3 +62,5 @@ pip install notebook
 
 * Make sure your Python version is compatible (Python 3.8+ recommended).
 * Using a virtual environmen
+
+

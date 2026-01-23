@@ -35,7 +35,7 @@ while True:
         break  # Stop the loop if frame is not captured
 
     # ------------------------------
-    # 4️⃣ Run YOLO inference on the frame
+    # Run YOLO inference on the frame
     # ------------------------------
     # verbose=False prevents printing detailed model info
     results = model(frame, verbose=False)[0]  # [0] gives results for this frame
@@ -44,7 +44,7 @@ while True:
     person_count = 0
 
     # ------------------------------
-    # 5️⃣ Iterate over detected objects
+    # Iterate over detected objects
     # ------------------------------
     # results.boxes contains all detected bounding boxes in the frame
     if results.boxes is not None:
@@ -81,7 +81,7 @@ while True:
                 )
 
     # ------------------------------
-    # 6️⃣ Display total number of people
+    # Display total number of people
     # ------------------------------
     cv2.putText(
         frame,
@@ -103,7 +103,7 @@ while True:
         break
 
 # ------------------------------
-# 8️⃣ Release resources
+# Release resources
 # ------------------------------
 cap.release()  # Release the camera
 cv2.destroyAllWindows()  # Close all OpenCV windows
