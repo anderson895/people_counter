@@ -49,7 +49,14 @@ pip install -r requirements.txt
 python people_counter.py
 ```
 
+
+
+
+## Optional if you want to view documentation 
 ---
+```
+pip install notebook
+```
 
 ## Notes
 
