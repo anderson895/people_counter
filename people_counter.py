@@ -5,14 +5,14 @@ import cv2
 from ultralytics import YOLO
 
 # ------------------------------
-# 1️⃣ Load YOLO Model
+# Load YOLO Model
 # ------------------------------
 # 'yolov5s.pt' is the small version of YOLOv5 pre-trained on COCO dataset
 # If weights are not present locally, it will automatically download them.
 model = YOLO("yolov5s.pt")  
 
 # ------------------------------
-# 2️⃣ Open the camera
+# Open the camera
 # ------------------------------
 # cv2.VideoCapture(0) opens the default camera (0). If you have multiple cameras,
 # you can change 0 to 1, 2, etc.
@@ -24,7 +24,7 @@ if not cap.isOpened():
     exit()  # Exit the program if camera cannot be accessed
 
 # ------------------------------
-# 3️⃣ Main Loop: Read frames continuously
+# Main Loop: Read frames continuously
 # ------------------------------
 while True:
     # Capture a single frame from the camera
@@ -94,7 +94,7 @@ while True:
     )
 
     # ------------------------------
-    # 7️⃣ Show the frame with bounding boxes
+    # Show the frame with bounding boxes
     # ------------------------------
     cv2.imshow("YOLO People Counter", frame)
 
