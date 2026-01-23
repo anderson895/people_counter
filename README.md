@@ -31,7 +31,8 @@ source venv/bin/activate
 * **Option 1:** Install main packages directly
 
 ```bash
-pip install torch torchvision opencv-python
+pip install ultralytics opencv-python torch
+
 ```
 
 * **Option 2:** Install from `requirements.txt` (if available)
