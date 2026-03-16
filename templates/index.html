@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Occupancy Monitor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['Space Mono', 'monospace'],
+            sans: ['DM Sans', 'sans-serif'],
+          },
+          colors: {
+            ink:   '#0a0f1e',
+            panel: '#111827',
+            edge:  '#1f2937',
+            soft:  '#374151',
+            dim:   '#6b7280',
+            light: '#d1d5db',
+            snow:  '#f9fafb',
+            accent:'#6366f1',
+            glow:  '#818cf8',
+          },
+          keyframes: {
+            pulse2: {
+              '0%,100%': { boxShadow: '0 0 0 3px rgba(99,102,241,0.25)' },
+              '50%':     { boxShadow: '0 0 0 7px rgba(99,102,241,0.05)' },
+            },
+            fadeIn: {
+              from: { opacity: 0, transform: 'translateY(6px)' },
+              to:   { opacity: 1, transform: 'translateY(0)' },
+            },
+          },
+          animation: {
+            pulse2: 'pulse2 2s ease-in-out infinite',
+            fadeIn: 'fadeIn 0.3s ease both',
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0a0f1e; }
+    .tab-active   { color:#fff; border-bottom: 2px solid #6366f1; }
+    .tab-inactive { color:#6b7280; border-bottom: 2px solid transparent; }
+    .tab-inactive:hover { color: #d1d5db; }
+    .live-dot { animation: pulse2 2s ease-in-out infinite; }
+    .room-card { transition: border-color .2s, transform .2s; }
+    .room-card:hover { border-color: #6366f1; transform: translateY(-2px); }
+    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); }
+  </style>
+</head>
+<body class="font-sans text-light min-h-screen">
+
+  <!-- TOP BAR -->
+  <header class="bg-panel border-b border-edge px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
+        <!-- building icon (SVG) -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-glow" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M14.763.075A.5.5 0 0 1 15 .5v15a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5V14h-1v1.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V10a.5.5 0 0 1 .342-.474L6 7.64V4.5a.5.5 0 0 1 .276-.447l8-4a.5.5 0 0 1 .487.022M6 8.694 1 10.36V15h5zM7 15h2v-1.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5V15h2V1.309l-7 3.5z"/>
+          <path d="M2 11h1v1H2zm2 0h1v1H4zm-2 2h1v1H2zm2 0h1v1H4zm4-4h1v1H8zm2 0h1v1h-1zm-2 2h1v1H8zm2 0h1v1h-1zm2-2h1v1h-1zm0 2h1v1h-1zM8 7h1v1H8zm2 0h1v1h-1zm2 0h1v1h-1zM8 5h1v1H8zm2 0h1v1h-1zm2 0h1v1h-1zm0-2h1v1h-1z"/>
+        </svg>
+      </div>
+      <span class="font-mono font-bold text-snow tracking-tight">Occupancy Monitor</span>
+    </div>
+    <div class="flex items-center gap-2 text-dim text-sm font-mono">
+      <span class="live-dot w-2 h-2 rounded-full bg-accent inline-block"></span>
+      LIVE &nbsp;·&nbsp;
+      <span id="clockDisplay" class="text-light">—</span>
+    </div>
+  </header>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+
+    <!-- TABS -->
+    <nav class="flex gap-1 border-b border-edge mb-6">
+      <button onclick="switchTab('dash')" id="tab-dash"
+        class="tab-active font-semibold text-sm px-4 py-2.5 transition-all">
+        <!-- grid icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="inline w-4 h-4 mr-1 -mt-0.5" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5zm8 0A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5zm-8 8A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5zm8 0A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5z"/>
+        </svg>
+        Dashboard
+      </button>
+      <button onclick="switchTab('log')" id="tab-log"
+        class="tab-inactive font-semibold text-sm px-4 py-2.5 transition-all">
+        <!-- clock icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="inline w-4 h-4 mr-1 -mt-0.5" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71z"/>
+          <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0"/>
+        </svg>
+        Log
+      </button>
+      <button onclick="switchTab('report')" id="tab-report"
+        class="tab-inactive font-semibold text-sm px-4 py-2.5 transition-all">
+        <!-- download icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="inline w-4 h-4 mr-1 -mt-0.5" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/>
+          <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z"/>
+        </svg>
+        Reports
+      </button>
+    </nav>
+
+    <!-- PANE: DASHBOARD -->
+    <div id="pane-dash" class="animate-fadeIn">
+      <p class="text-xs font-mono font-bold uppercase tracking-widest text-dim mb-4">Live Occupancy</p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        {% for room in rooms %}
+        <div class="room-card bg-panel border border-edge rounded-2xl p-5">
+          <p class="text-xs font-mono font-bold uppercase tracking-widest text-dim mb-1">{{ room.name }}</p>
+          <p class="text-5xl font-mono font-bold text-snow leading-none" id="live-{{ room.id }}">—</p>
+          <p class="text-xs text-dim mt-1 mb-4">people detected</p>
+          <div class="border-t border-edge pt-3 flex flex-wrap gap-2">
+            <span class="flex items-center gap-1.5 bg-ink border border-edge rounded-lg px-3 py-1 text-xs">
+              <span class="text-dim">Last log</span>
+              <strong class="text-light font-mono" id="ll-count-{{ room.id }}">—</strong>
+            </span>
+            <span class="flex items-center gap-1.5 bg-ink border border-edge rounded-lg px-3 py-1 text-xs">
+              <span class="text-dim">@</span>
+              <strong class="text-light font-mono" id="ll-ts-{{ room.id }}">—</strong>
+            </span>
+            <span class="flex items-center gap-1.5 bg-ink border border-edge rounded-lg px-3 py-1 text-xs">
+              <span class="text-dim">1h avg</span>
+              <strong class="text-light font-mono" id="avg-{{ room.id }}">—</strong>
+            </span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- PANE: LOG -->
+    <div id="pane-log" class="hidden animate-fadeIn">
+      <div class="flex items-center justify-between mb-4">
+        <p class="text-xs font-mono font-bold uppercase tracking-widest text-dim">15-Minute Snapshots</p>
+        <button onclick="loadLogs()"
+          class="flex items-center gap-1.5 text-xs border border-edge rounded-lg px-3 py-1.5 text-dim hover:text-light hover:border-soft transition-all">
+          <!-- refresh icon -->
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
+            <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
+          </svg>
+          Refresh
+        </button>
+      </div>
+      <div class="bg-panel border border-edge rounded-2xl overflow-hidden">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-edge">
+              <th class="text-left text-xs font-mono font-bold uppercase tracking-widest text-dim px-5 py-3">Timestamp</th>
+              <th class="text-left text-xs font-mono font-bold uppercase tracking-widest text-dim px-5 py-3">Room</th>
+              <th class="text-left text-xs font-mono font-bold uppercase tracking-widest text-dim px-5 py-3">Count</th>
+            </tr>
+          </thead>
+          <tbody id="logBody">
+            <tr><td colspan="3" class="text-center text-dim text-sm py-10">Loading …</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PANE: REPORTS -->
+    <div id="pane-report" class="hidden animate-fadeIn">
+      <div class="max-w-xl mx-auto">
+        <div class="bg-panel border border-edge rounded-2xl p-6">
+          <div class="flex items-center gap-2 mb-6">
+            <!-- spreadsheet icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-glow" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2M9.5 3A1.5 1.5 0 0 0 11 4.5h2V9H3V2a1 1 0 0 1 1-1h5.5zM3 12v-2h2v2zm0 1h2v2H4a1 1 0 0 1-1-1zm3 2v-2h3v2zm4 0v-2h3v1a1 1 0 0 1-1 1zm3-3h-3v-2h3zm-7 0v-2h3v2z"/>
+            </svg>
+            <h2 class="font-bold text-snow">Download CSV Report</h2>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div>
+              <label class="block text-xs text-dim mb-1.5 font-medium">Start date</label>
+              <input type="date" id="rptStart"
+                class="w-full bg-ink border border-edge rounded-lg px-3 py-2 text-sm text-light focus:outline-none focus:border-accent"/>
+            </div>
+            <div>
+              <label class="block text-xs text-dim mb-1.5 font-medium">End date</label>
+              <input type="date" id="rptEnd"
+                class="w-full bg-ink border border-edge rounded-lg px-3 py-2 text-sm text-light focus:outline-none focus:border-accent"/>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap gap-2 mb-5 items-center">
+            <span class="text-xs text-dim">Quick:</span>
+            <button onclick="setPreset('today')"     class="text-xs border border-edge rounded-lg px-3 py-1 text-dim hover:text-light hover:border-soft transition-all">Today</button>
+            <button onclick="setPreset('yesterday')" class="text-xs border border-edge rounded-lg px-3 py-1 text-dim hover:text-light hover:border-soft transition-all">Yesterday</button>
+            <button onclick="setPreset('week')"      class="text-xs border border-edge rounded-lg px-3 py-1 text-dim hover:text-light hover:border-soft transition-all">Last 7 days</button>
+            <button onclick="setPreset('month')"     class="text-xs border border-edge rounded-lg px-3 py-1 text-dim hover:text-light hover:border-soft transition-all">Last 30 days</button>
+          </div>
+
+          <label class="block text-xs text-dim mb-2 font-medium">Rooms to include</label>
+          <div class="bg-ink border border-edge rounded-xl p-4 mb-5 space-y-2">
+            <label class="flex items-center gap-2.5 cursor-pointer">
+              <input type="checkbox" id="allRooms" checked onchange="toggleAll(this)" class="w-4 h-4 rounded accent-accent"/>
+              <span class="text-sm font-semibold text-snow">All rooms</span>
+            </label>
+            <div class="border-t border-edge my-2"></div>
+            {% for room in rooms %}
+            <label class="flex items-center gap-2.5 cursor-pointer">
+              <input type="checkbox" class="room-chk w-4 h-4 rounded accent-accent"
+                value="{{ room.id }}" id="rc-{{ room.id }}" checked/>
+              <span class="text-sm text-light">{{ room.name }}</span>
+            </label>
+            {% endfor %}
+          </div>
+
+          <button onclick="downloadReport()"
+            class="w-full bg-accent hover:bg-indigo-500 text-white font-semibold rounded-xl py-2.5 text-sm transition-colors flex items-center justify-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/>
+              <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z"/>
+            </svg>
+            Download CSV
+          </button>
+          <p id="rptMsg" class="mt-2 text-center text-xs text-dim"></p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+<script>
+const TABS = ['dash','log','report'];
+function switchTab(t) {
+  TABS.forEach(id => {
+    document.getElementById(`tab-${id}`).className =
+      id === t ? 'tab-active font-semibold text-sm px-4 py-2.5 transition-all'
+               : 'tab-inactive font-semibold text-sm px-4 py-2.5 transition-all';
+    document.getElementById(`pane-${id}`).classList.toggle('hidden', id !== t);
+  });
+  if (t === 'log') loadLogs();
+}
+
+async function pollStatus() {
+  try {
+    const data = await (await fetch('/api/status')).json();
+    document.getElementById('clockDisplay').textContent = data.server_time;
+    for (const r of data.rooms) {
+      setText(`live-${r.id}`,     r.live_count);
+      setText(`ll-count-${r.id}`, r.last_count);
+      setText(`avg-${r.id}`,      r.avg_count);
+      const ts = r.last_logged;
+      setText(`ll-ts-${r.id}`, ts === '—' ? '—' : ts.slice(11,16));
+    }
+  } catch(e) { console.warn('poll failed', e); }
+}
+function setText(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+setInterval(pollStatus, 3000);
+pollStatus();
+
+async function loadLogs() {
+  const tbody = document.getElementById('logBody');
+  tbody.innerHTML = '<tr><td colspan="3" class="text-center text-dim text-sm py-10">Loading …</td></tr>';
+  try {
+    const rows = await (await fetch('/api/recent_logs')).json();
+    if (!rows.length) {
+      tbody.innerHTML = '<tr><td colspan="3" class="text-center text-dim text-sm py-10">No logs yet — first snapshot at the next 15-minute mark.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map((r,i) => `
+      <tr class="${i%2?'bg-white/[0.02]':''} border-b border-edge/50 hover:bg-white/5 transition-colors">
+        <td class="px-5 py-3 font-mono text-xs text-light">${r.ts}</td>
+        <td class="px-5 py-3">
+          <span class="bg-accent/10 text-glow text-xs px-2.5 py-0.5 rounded-full font-medium">${r.room_name}</span>
+        </td>
+        <td class="px-5 py-3 font-mono font-bold text-snow">${r.count}</td>
+      </tr>`).join('');
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="3" class="text-center text-red-400 text-sm py-10">Failed to load.</td></tr>';
+  }
+}
+
+const today  = () => new Date().toISOString().slice(0,10);
+const offset = n => { const d=new Date(); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
+
+function setPreset(p) {
+  const s = document.getElementById('rptStart'), e = document.getElementById('rptEnd');
+  if (p==='today')     { s.value=today();     e.value=today(); }
+  if (p==='yesterday') { s.value=offset(-1);  e.value=offset(-1); }
+  if (p==='week')      { s.value=offset(-6);  e.value=today(); }
+  if (p==='month')     { s.value=offset(-29); e.value=today(); }
+}
+
+function toggleAll(cb) {
+  document.querySelectorAll('.room-chk').forEach(r => r.checked = cb.checked);
+}
+
+function downloadReport() {
+  const start=document.getElementById('rptStart').value;
+  const end  =document.getElementById('rptEnd').value;
+  const msg  =document.getElementById('rptMsg');
+  if (!start||!end) { msg.textContent='⚠ Please select start and end dates.'; return; }
+  if (start>end)    { msg.textContent='⚠ Start date must be before end date.'; return; }
+  const checked=[...document.querySelectorAll('.room-chk:checked')].map(r=>r.value);
+  if (!checked.length) { msg.textContent='⚠ Select at least one room.'; return; }
+  const rooms=checked.length===document.querySelectorAll('.room-chk').length?'all':checked.join(',');
+  msg.textContent='⏳ Preparing download …';
+  Object.assign(document.createElement('a'),{href:`/api/report?start=${start}&end=${end}&rooms=${rooms}`}).click();
+  setTimeout(()=>msg.textContent='✅ Download started.',600);
+}
+
+document.getElementById('rptStart').value = offset(-6);
+document.getElementById('rptEnd').value   = today();
+</script>
+</body>
+</html>

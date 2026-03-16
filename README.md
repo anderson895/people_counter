@@ -1,66 +1,55 @@
-# People Counter
+# People Counter — Extended
 
-This project detects and counts people using Python, OpenCV, and PyTorch.
+Extended from the original single-camera people counter to support:
+- Multiple rooms / large areas (multi-camera per room)
+- 15-minute occupancy logging to SQLite
+- Live web dashboard (real-time count, last log, 1-hour average)
+- CSV report download with date range and room selection
 
----
-
-## Setup
-
-### 1. Create a virtual environment (optional but recommended)
-
-```bash
-python -m venv venv
-```
-
-### 2. Activate the virtual environment
-
-* **Windows**:
-
-```bash
-venv\Scripts\activate
-```
-
-* **macOS/Linux**:
-
-```bash
-source venv/bin/activate
-```
-
-### 3. Install requirements
-
-* **Option 1:** Install main packages directly
-
-```bash
-pip install ultralytics opencv-python torch
-
-```
-
-* **Option 2:** Install from `requirements.txt` (if available)
+## Quick Start
 
 ```bash
 pip install -r requirements.txt
-```
-
----
-
-## Usage
-
-```bash
 python people_counter.py
+# Open http://localhost:5000
 ```
 
+## Configure rooms & cameras
 
+Edit the `ROOMS` list near the top of `people_counter.py`:
 
-
-## Optional if you want to view documentation 
----
+```python
+ROOMS = [
+    {
+        "id":      "lobby",
+        "name":    "Lobby",
+        "cameras": [0],        # USB webcam index
+    },
+    {
+        "id":      "main_hall",
+        "name":    "Main Hall",
+        "cameras": [1, 2],     # two cameras — counts are summed
+    },
+]
 ```
-pip install notebook
+
+**Camera sources:**
+| Value | Type |
+|-------|------|
+| `0`, `1`, `2` | USB webcam |
+| `"rtsp://user:pass@ip/stream"` | IP / RTSP camera |
+| `"videos/test.mp4"` | Video file |
+
+## Files
+
 ```
-
-## Notes
-
-* Make sure your Python version is compatible (Python 3.8+ recommended).
-* Using a virtual environmen
-
-
+people_counter-main/
+├── people_counter.py   ← main file (run this)
+├── open_camera.py      ← original camera test utility
+├── requirements.txt
+├── yolov5su.pt         ← YOLO model weights
+├── occupancy.db        ← created automatically on first run
+├── note.txt
+└── templates/
+    └── index.html      ← dashboard UI
+```
