@@ -9,26 +9,34 @@ interface UseOccupancySocketReturn {
   reconnect: () => void
 }
 
-const WS_URL = (() => {
+// Always use the current page's host — works in both dev (port 3000)
+// and production (port 5000). Vite proxies /ws → Flask in dev.
+function getWsUrl(): string {
   const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   const host  = window.location.host
   return `${proto}//${host}/ws/status`
-})()
+}
 
 const RECONNECT_MS = 2000
 
 export function useOccupancySocket(): UseOccupancySocketReturn {
-  const [status,  setStatus]  = useState<StatusPayload | null>(null)
-  const [wsState, setWsState] = useState<WsState>('connecting')
-  const wsRef     = useRef<WebSocket | null>(null)
-  const timerRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [status,   setStatus]   = useState<StatusPayload | null>(null)
+  const [wsState,  setWsState]  = useState<WsState>('connecting')
+  const wsRef      = useRef<WebSocket | null>(null)
+  const timerRef   = useRef<ReturnType<typeof setTimeout> | null>(null)
   const mountedRef = useRef(true)
 
   const connect = useCallback(() => {
     if (!mountedRef.current) return
 
+    // Close any existing socket first
+    if (wsRef.current) {
+      wsRef.current.onclose = null
+      wsRef.current.close()
+    }
+
     setWsState('connecting')
-    const ws = new WebSocket(WS_URL)
+    const ws = new WebSocket(getWsUrl())
     wsRef.current = ws
 
     ws.onopen = () => {
@@ -39,8 +47,7 @@ export function useOccupancySocket(): UseOccupancySocketReturn {
     ws.onmessage = (evt) => {
       if (!mountedRef.current) return
       try {
-        const payload = JSON.parse(evt.data) as StatusPayload
-        setStatus(payload)
+        setStatus(JSON.parse(evt.data) as StatusPayload)
       } catch { /* ignore malformed */ }
     }
 
@@ -52,7 +59,6 @@ export function useOccupancySocket(): UseOccupancySocketReturn {
     ws.onclose = () => {
       if (!mountedRef.current) return
       setWsState('closed')
-      // Auto-reconnect
       timerRef.current = setTimeout(connect, RECONNECT_MS)
     }
   }, [])

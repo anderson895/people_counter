@@ -6,21 +6,22 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      // Proxy REST API calls to Flask
+      // REST API
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true,
       },
-      // Proxy WebSocket connection to Flask-SocketIO
-      '/socket.io': {
-        target: 'http://localhost:5000',
+      // WebSocket — must use ws target
+      '/ws': {
+        target: 'ws://localhost:5000',
         changeOrigin: true,
         ws: true,
+        rewriteWsOrigin: true,
       },
     },
   },
   build: {
-    outDir: '../static',   // Flask serves built files from /static
+    outDir: '../static',
     emptyOutDir: true,
   },
 })
