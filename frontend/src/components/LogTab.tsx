@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { LogRow } from '../types'
+import { ArrowPathIcon } from '@heroicons/react/24/outline'
 
 export function LogTab() {
   const [rows,    setRows]    = useState<LogRow[]>([])
@@ -10,7 +11,7 @@ export function LogTab() {
     setLoading(true)
     setError(false)
     try {
-      const res = await fetch('/api/recent_logs')
+      const res  = await fetch('/api/recent_logs')
       const data: LogRow[] = await res.json()
       setRows(data)
     } catch {
@@ -25,14 +26,14 @@ export function LogTab() {
   return (
     <div className="animate-fadeUp">
       <div className="flex items-center justify-between mb-4">
-        <p className="text-xs font-mono font-bold uppercase tracking-widest text-dim">
+        <p className="text-[11px] font-mono font-bold uppercase tracking-widest text-dim">
           15-Minute Snapshots
         </p>
         <button
           onClick={load}
           className="flex items-center gap-1.5 text-xs border border-edge rounded-lg px-3 py-1.5 text-dim hover:text-light hover:border-soft transition-all"
         >
-          <RefreshIcon />
+          <ArrowPathIcon className="w-3.5 h-3.5" />
           Refresh
         </button>
       </div>
@@ -89,14 +90,5 @@ export function LogTab() {
         </table>
       </div>
     </div>
-  )
-}
-
-function RefreshIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 16 16">
-      <path fillRule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
-      <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
-    </svg>
   )
 }

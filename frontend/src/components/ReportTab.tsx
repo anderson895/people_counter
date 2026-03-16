@@ -1,23 +1,29 @@
 import { useState } from 'react'
+import {
+  ArrowDownTrayIcon,
+  DocumentChartBarIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+  ClockIcon,
+} from '@heroicons/react/24/outline'
 
 interface Room { id: string; name: string }
-
-interface Props {
-  rooms: Room[]
-}
+interface Props { rooms: Room[] }
 
 const today  = () => new Date().toISOString().slice(0, 10)
 const offset = (n: number) => {
-  const d = new Date()
-  d.setDate(d.getDate() + n)
-  return d.toISOString().slice(0, 10)
+  const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10)
 }
 
+type MsgType = 'idle' | 'warn' | 'loading' | 'success'
+
+interface Msg { type: MsgType; text: string }
+
 export function ReportTab({ rooms }: Props) {
-  const [start,      setStart]      = useState(offset(-6))
-  const [end,        setEnd]        = useState(today())
-  const [selected,   setSelected]   = useState<Set<string>>(new Set(rooms.map(r => r.id)))
-  const [msg,        setMsg]        = useState('')
+  const [start,    setStart]    = useState(offset(-6))
+  const [end,      setEnd]      = useState(today())
+  const [selected, setSelected] = useState<Set<string>>(new Set(rooms.map(r => r.id)))
+  const [msg,      setMsg]      = useState<Msg | null>(null)
 
   const allChecked = selected.size === rooms.length
 
@@ -41,15 +47,16 @@ export function ReportTab({ rooms }: Props) {
   }
 
   const download = () => {
-    if (!start || !end)   { setMsg('⚠ Please select start and end dates.'); return }
-    if (start > end)      { setMsg('⚠ Start date must be before end date.'); return }
-    if (selected.size < 1){ setMsg('⚠ Select at least one room.'); return }
+    if (!start || !end)    { setMsg({ type: 'warn',    text: 'Please select start and end dates.' }); return }
+    if (start > end)       { setMsg({ type: 'warn',    text: 'Start date must be before end date.' }); return }
+    if (selected.size < 1) { setMsg({ type: 'warn',    text: 'Select at least one room.' }); return }
+
     const roomsParam = selected.size === rooms.length ? 'all' : [...selected].join(',')
-    setMsg('⏳ Preparing download…')
+    setMsg({ type: 'loading', text: 'Preparing download…' })
     const a = document.createElement('a')
     a.href = `/api/report?start=${start}&end=${end}&rooms=${roomsParam}`
     a.click()
-    setTimeout(() => setMsg('✅ Download started.'), 600)
+    setTimeout(() => setMsg({ type: 'success', text: 'Download started.' }), 600)
   }
 
   return (
@@ -59,7 +66,7 @@ export function ReportTab({ rooms }: Props) {
 
           {/* Header */}
           <div className="flex items-center gap-2 mb-6">
-            <SpreadsheetIcon />
+            <DocumentChartBarIcon className="w-5 h-5 text-glow" />
             <h2 className="font-bold text-snow text-base">Download CSV Report</h2>
           </div>
 
@@ -67,7 +74,7 @@ export function ReportTab({ rooms }: Props) {
           <div className="grid grid-cols-2 gap-3 mb-4">
             {[
               { label: 'Start date', value: start, set: setStart },
-              { label: 'End date',   value: end,   set: setEnd   },
+              { label: 'End date',   value: end,   set: setEnd },
             ].map(({ label, value, set }) => (
               <div key={label}>
                 <label className="block text-xs text-dim mb-1.5 font-medium">{label}</label>
@@ -85,13 +92,18 @@ export function ReportTab({ rooms }: Props) {
           {/* Quick presets */}
           <div className="flex flex-wrap gap-2 mb-5 items-center">
             <span className="text-xs text-dim">Quick:</span>
-            {['today', 'yesterday', 'week', 'month'].map(p => (
+            {[
+              { key: 'today',     label: 'Today' },
+              { key: 'yesterday', label: 'Yesterday' },
+              { key: 'week',      label: 'Last 7 days' },
+              { key: 'month',     label: 'Last 30 days' },
+            ].map(({ key, label }) => (
               <button
-                key={p}
-                onClick={() => setPreset(p)}
-                className="text-xs border border-edge rounded-lg px-3 py-1 text-dim hover:text-light hover:border-soft capitalize transition-all"
+                key={key}
+                onClick={() => setPreset(key)}
+                className="text-xs border border-edge rounded-lg px-3 py-1 text-dim hover:text-light hover:border-soft transition-all"
               >
-                {p === 'week' ? 'Last 7 days' : p === 'month' ? 'Last 30 days' : p.charAt(0).toUpperCase() + p.slice(1)}
+                {label}
               </button>
             ))}
           </div>
@@ -127,31 +139,26 @@ export function ReportTab({ rooms }: Props) {
             onClick={download}
             className="w-full bg-accent hover:bg-indigo-500 active:scale-95 text-white font-semibold rounded-xl py-2.5 text-sm transition-all flex items-center justify-center gap-2"
           >
-            <DownloadIcon />
+            <ArrowDownTrayIcon className="w-4 h-4" />
             Download CSV
           </button>
+
+          {/* Status message */}
           {msg && (
-            <p className="mt-2 text-center text-xs text-dim">{msg}</p>
+            <div className={`mt-3 flex items-center justify-center gap-1.5 text-xs ${
+              msg.type === 'warn'    ? 'text-warn' :
+              msg.type === 'success' ? 'text-ok'   :
+              msg.type === 'loading' ? 'text-muted' : 'text-dim'
+            }`}>
+              {msg.type === 'warn'    && <ExclamationTriangleIcon className="w-3.5 h-3.5" />}
+              {msg.type === 'success' && <CheckCircleIcon className="w-3.5 h-3.5" />}
+              {msg.type === 'loading' && <ClockIcon className="w-3.5 h-3.5" />}
+              {msg.text}
+            </div>
           )}
+
         </div>
       </div>
     </div>
-  )
-}
-
-function SpreadsheetIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-glow" fill="currentColor" viewBox="0 0 16 16">
-      <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2M9.5 3A1.5 1.5 0 0 0 11 4.5h2V9H3V2a1 1 0 0 1 1-1h5.5zM3 12v-2h2v2zm0 1h2v2H4a1 1 0 0 1-1-1zm3 2v-2h3v2zm4 0v-2h3v1a1 1 0 0 1-1 1zm3-3h-3v-2h3zm-7 0v-2h3v2z"/>
-    </svg>
-  )
-}
-
-function DownloadIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="currentColor" viewBox="0 0 16 16">
-      <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/>
-      <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z"/>
-    </svg>
   )
 }
